@@ -12,5 +12,4 @@ interface IClient<I : IInterface> {
 
     fun serviceComponent(): ComponentName?
 
-//    fun serviceAction(): String?
 }

@@ -16,6 +16,12 @@ abstract class AbstractService<Stub : Binder> : LifecycleService() {
         return stub
     }
 
+    override fun onUnbind(intent: Intent?): Boolean {
+        return super.onUnbind(intent).apply {
+            log("service onUnbind")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         log("service is onCreate")

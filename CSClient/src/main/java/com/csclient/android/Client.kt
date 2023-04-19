@@ -10,11 +10,11 @@ import com.csclient.android.client.IClient
 import com.csclient.android.utils.parse
 
 object Client {
-    val cache = HashMap<Class<out IInterface>, IClient<out IInterface>>()
+    private val cache = HashMap<Class<out IInterface>, AbstractClient<out IInterface>>()
 
-    var serviceInfo: Map<Class<*>, ComponentName>? = null
+    private var serviceInfo: Map<Class<*>, ComponentName>? = null
 
-    fun parseServiceInfo(context: Context) {
+    private fun parseServiceInfo(context: Context) {
         if (serviceInfo == null) {
             serviceInfo = mutableMapOf<Class<*>, ComponentName>().apply {
                 context.packageManager.getPackageInfo(
@@ -25,20 +25,23 @@ object Client {
         }
     }
 
-    inline fun <reified I : IInterface> getClient(context: Context): IClient<I> {
-        val clazz = I::class.java
+    fun <I : IInterface> fetch(context: Context, clazz: Class<I>): IClient<I> {
         return synchronized(this@Client) {
             parseServiceInfo(context)
             cache[clazz] ?: object : AbstractClient<I>(context) {
                 override fun asInterface(service: IBinder?): I? =
                     clazz.declaredClasses.find { it.name.endsWith("Stub") }?.methods?.find {
                         it.name.contains("asInterface")
-                    }?.invoke("invoke", service) as I?
+                    }?.invoke("invoke", service) as? I?
 
                 override fun serviceComponent(): ComponentName? = serviceInfo?.get(clazz)
 
             }.apply { cache[clazz] = this }
         } as IClient<I>
+    }
+
+    inline fun <reified I : IInterface> getClient(context: Context): IClient<I> {
+        return fetch(context, I::class.java)
     }
 
     /**
