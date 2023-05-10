@@ -69,7 +69,9 @@ abstract class AbstractClient<I : IInterface>(ctx: Context) : IClient<I> {
             val intent = Intent().apply {
                 component = serviceComponent()
             }
-            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            if (!context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)) {
+                status.set(STATUS_PENDING)
+            }
         }
     }
 
