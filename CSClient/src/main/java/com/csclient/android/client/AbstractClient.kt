@@ -44,7 +44,6 @@ abstract class AbstractClient<I : IInterface>(ctx: Context) : IClient<I> {
         start()
     }.looper) {
         override fun handleMessage(msg: Message) {
-            bindService()
             lock.await()
             try {
                 msg.obj.isTypeOf<(I) -> Unit> {
@@ -60,6 +59,7 @@ abstract class AbstractClient<I : IInterface>(ctx: Context) : IClient<I> {
     }
 
     override fun emit(action: (I) -> Unit) {
+        bindService()
         handler.sendMessage(handler.obtainMessage(MSG_ACTION, action))
     }
 
