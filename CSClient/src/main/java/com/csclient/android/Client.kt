@@ -12,17 +12,17 @@ import com.csclient.android.utils.parse
 object Client {
     private val cache = HashMap<Class<out IInterface>, AbstractClient<out IInterface>>()
 
-    private var serviceInfo: Map<Class<*>, ComponentName>? = null
+    private val serviceInfo: MutableMap<Class<*>, ComponentName> by lazy { mutableMapOf() }
 
     private fun parseServiceInfo(context: Context) {
-        if (serviceInfo == null) {
-            serviceInfo = mutableMapOf<Class<*>, ComponentName>().apply {
-                context.packageManager.getPackageInfo(
-                    context.packageName,
-                    PackageManager.GET_SERVICES
-                ).services?.forEach { it.parse(this) }
-            }
-        }
+        context.packageManager.getPackageInfo(
+            context.packageName,
+            PackageManager.GET_SERVICES
+        ).services?.forEach { it.parse(serviceInfo) }
+    }
+
+    fun register(clazz: Class<*>, component: ComponentName) {
+        serviceInfo[clazz] = component
     }
 
     fun <I : IInterface> fetch(context: Context, clazz: Class<I>): IClient<I> {
