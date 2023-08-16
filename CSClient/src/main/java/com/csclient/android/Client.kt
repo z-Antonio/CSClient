@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.os.IInterface
 import com.csclient.android.client.AbstractClient
 import com.csclient.android.client.IClient
+import com.csclient.android.utils.isTypeOf
 import com.csclient.android.utils.parse
 
 object Client {
@@ -14,11 +15,16 @@ object Client {
 
     private val serviceInfo: MutableMap<Class<*>, ComponentName> by lazy { mutableMapOf() }
 
+    private var flag = false
+
     private fun parseServiceInfo(context: Context) {
-        context.packageManager.getPackageInfo(
-            context.packageName,
-            PackageManager.GET_SERVICES
-        ).services?.forEach { it.parse(serviceInfo) }
+        if (!flag) {
+            flag = true
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SERVICES
+            ).services?.forEach { it.parse(serviceInfo) }
+        }
     }
 
     fun register(clazz: Class<*>, component: ComponentName) {
@@ -34,7 +40,7 @@ object Client {
                         it.name.contains("asInterface")
                     }?.invoke("invoke", service) as? I?
 
-                override fun serviceComponent(): ComponentName? = serviceInfo?.get(clazz)
+                override fun serviceComponent(): ComponentName? = serviceInfo[clazz]
 
             }.apply { cache[clazz] = this }
         } as IClient<I>
@@ -49,6 +55,12 @@ object Client {
      */
     inline fun <reified I : IInterface> get(context: Context, noinline action: (I) -> Unit) {
         getClient<I>(context).emit(action as (IInterface) -> Unit)
+    }
+
+    inline fun <reified I : IInterface> setOnConnectedListener(context: Context, listener: AbstractClient.OnConnectedListener<I>) {
+        getClient<I>(context).isTypeOf<AbstractClient<I>> {
+            it.setOnConnectedListener(listener)
+        }
     }
 
 }

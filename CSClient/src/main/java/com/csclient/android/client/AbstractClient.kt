@@ -20,6 +20,12 @@ abstract class AbstractClient<I : IInterface>(ctx: Context) : IClient<I> {
         private const val MSG_ACTION = 1
     }
 
+    interface OnConnectedListener<T> {
+        fun onConnected(t: T)
+    }
+
+    private var onConnectedListener: OnConnectedListener<I>? = null
+
     private val context: Context = ctx.applicationContext
     private var client: I? = null
 
@@ -32,6 +38,9 @@ abstract class AbstractClient<I : IInterface>(ctx: Context) : IClient<I> {
             client = asInterface(service)
             lock.countDown()
             log("service is connected. lock is ${lock.count}")
+            client?.let {
+                onConnectedListener?.onConnected(it)
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -56,6 +65,10 @@ abstract class AbstractClient<I : IInterface>(ctx: Context) : IClient<I> {
                 e.stackTrace.forEach { log(it.toString()) }
             }
         }
+    }
+
+    fun setOnConnectedListener(listener: OnConnectedListener<I>) {
+        onConnectedListener = listener
     }
 
     override fun emit(action: (I) -> Unit) {
